@@ -1,9 +1,11 @@
 use std::io::{self, BufRead, Write};
 use std::{collections::HashSet, fs::File};
 
+use crate::tools::file_actions::{self, open_files_by_path, read_file, write_file};
+
 pub fn get_sorted_lines(path: &str) -> Result<String, String> {
     // Open and read file
-    let file = File::open(path).map_err(|_| format!("ERROR: File not found in {}", path))?;
+    let file = open_files_by_path(path)?;
     let reader = io::BufReader::new(file);
 
     let mut lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
@@ -32,26 +34,19 @@ pub fn get_sorted_lines(path: &str) -> Result<String, String> {
 
 pub fn merge_playlists(path_1: &str, path_2: &str) -> Result<String, String> {
     // Open files
-    let file1 = File::open(path_1).map_err(|_| format!("ERROR: File 1 not found in {}", path_1))?;
-    let file2 = File::open(path_2).map_err(|_| format!("ERROR: File 2 not found in {}", path_2))?;
+    let file_1 = open_files_by_path(path_1)?;
+    let file_2 = open_files_by_path(path_2)?;
 
     // Read files
-    let mut lines_1: Vec<String> = io::BufReader::new(file1)
-        .lines()
-        .map_while(Result::ok)
-        .collect();
-    let mut lines_2: Vec<String> = io::BufReader::new(file2)
-        .lines()
-        .map_while(Result::ok)
-        .collect();
+    let mut lines_1: Vec<String> = read_file(file_1)?;
+    let mut lines_2: Vec<String> = read_file(file_2)?;
 
     // Merge vectors
     lines_1.append(&mut lines_2);
 
     // Create final merged file
     let out_path = "./Merged_Playlist.txt";
-    let write_file =
-        File::create(out_path).map_err(|_| format!("ERROR: Unable to write in {}", out_path))?;
+    let write_file = write_file(out_path)?;
 
     let mut writer = io::BufWriter::new(write_file);
 

@@ -1,5 +1,6 @@
 mod frame;
 mod logic;
+mod tools;
 
 pub const PATH: &str = "./Musical.m3u8";
 pub const PATH_1: &str = "./a.txt";
