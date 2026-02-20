@@ -10,9 +10,8 @@ pub const PATH_2: &str = "./b.txt";
 // }
 
 fn main() {
-    // println!("Buscando archivo en: {}", RUTA);
-    // println!("{}", logic::get_sorted_lines(RUTA));
-    println!("{}", logic::merge_playlists(PATH_1, PATH_2));
+    println!("{:?}", logic::get_sorted_lines(PATH));
+    // println!("{}", logic::merge_playlists(PATH_1, PATH_2));
 }
 
 // Función de actualización mínima

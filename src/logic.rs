@@ -1,77 +1,81 @@
 use std::io::{self, BufRead, Write};
 use std::{collections::HashSet, fs::File};
 
-pub fn get_sorted_lines(path: &str) -> String {
-    // Read File
-    let open_file = match File::open(path) {
-        Ok(f) => f,
-        Err(_) => return "ERROR: FIle not found in".to_string() + path,
-    };
+pub fn get_sorted_lines(path: &str) -> Result<String, String> {
+    // Open and read file
+    let file = File::open(path).map_err(|_| format!("ERROR: File not found in {}", path))?;
+    let reader = io::BufReader::new(file);
 
-    let reader = io::BufReader::new(open_file);
     let mut lines: Vec<String> = reader.lines().map_while(Result::ok).collect();
 
-    // Sort Lines
+    // Sort lines
     lines.sort();
 
-    // Overwrite file (File::create trunc file if already exists)
-    let write_file = match File::create(path) {
-        Ok(f) => f,
-        Err(_) => return "ERROR: Unable to write in the file ".to_string() + path,
-    };
+    // Trunc file
+    let write_file =
+        File::create(path).map_err(|_| format!("ERROR: Unable to write in the file {}", path))?;
 
     let mut writer = io::BufWriter::new(write_file);
 
+    // Add lines to file
     for line in lines {
-        if writeln!(writer, "{}", line).is_err() {
-            return "ERROR: Failed while writing a line: ".to_string() + &line.to_string();
-        }
+        writeln!(writer, "{}", line)
+            .map_err(|_| format!("ERROR: Failed while writing line: {}", line))?;
     }
 
-    "DONE".to_string()
+    writer
+        .flush()
+        .map_err(|_| "ERROR: Failed to flush buffer".to_string())?;
+
+    Ok("DONE".to_string())
 }
 
-pub fn merge_playlists(path_1: &str, path_2: &str) -> String {
-    let open_file_1 = match File::open(path_1) {
-        Ok(f) => f,
-        Err(_) => return "ERROR: File 1 not found in".to_string() + path_1,
-    };
+pub fn merge_playlists(path_1: &str, path_2: &str) -> Result<String, String> {
+    // Open files
+    let file1 = File::open(path_1).map_err(|_| format!("ERROR: File 1 not found in {}", path_1))?;
+    let file2 = File::open(path_2).map_err(|_| format!("ERROR: File 2 not found in {}", path_2))?;
 
-    let open_file_2 = match File::open(path_2) {
-        Ok(f) => f,
-        Err(_) => return "ERROR: File 2 not found in".to_string() + path_2,
-    };
+    // Read files
+    let mut lines_1: Vec<String> = io::BufReader::new(file1)
+        .lines()
+        .map_while(Result::ok)
+        .collect();
+    let mut lines_2: Vec<String> = io::BufReader::new(file2)
+        .lines()
+        .map_while(Result::ok)
+        .collect();
 
-    let reader_1 = io::BufReader::new(open_file_1);
-    let mut lines_1: Vec<String> = reader_1.lines().map_while(Result::ok).collect();
-
-    let reader_2 = io::BufReader::new(open_file_2);
-    let mut lines_2: Vec<String> = reader_2.lines().map_while(Result::ok).collect();
-
+    // Merge vectors
     lines_1.append(&mut lines_2);
 
-    // Overwrite or create file (File::create trunc file if already exists)
-    let write_file = match File::create("./Merged_Playlist.txt") {
-        Ok(f) => f,
-        Err(_) => return "ERROR: Unable to write in the file ".to_string(),
-    };
+    // Create final merged file
+    let out_path = "./Merged_Playlist.txt";
+    let write_file =
+        File::create(out_path).map_err(|_| format!("ERROR: Unable to write in {}", out_path))?;
 
     let mut writer = io::BufWriter::new(write_file);
 
+    // Write each line into unified file
     for line in &lines_1 {
-        if writeln!(writer, "{}", line).is_err() {
-            return "ERROR: Failed while writing a line: ".to_string() + &line.to_string();
-        }
+        writeln!(writer, "{}", line)
+            .map_err(|_| format!("ERROR: Failed while writing: {}", line))?;
     }
 
-    remove_duplicated_lines(lines_1.clone());
+    // Sync buffer with disk
+    writer
+        .flush()
+        .map_err(|_| "ERROR: Failed to flush data".to_string())?;
 
-    "DONE".to_string()
+    Ok("DONE".to_string())
 }
 
-pub fn remove_duplicated_lines(mut lines:Vec<String>) -> String {
+pub fn remove_duplicated_lines(mut lines: Vec<String>) -> Result<Vec<String>, String> {
     let mut seen = HashSet::new();
+
+    if lines.is_empty() {
+        return Err("The list is empty".to_string());
+    }
+
     lines.retain(|x| seen.insert(x.clone()));
-    println!("{:?}", lines);
-    "DONE".to_string()
+    Ok(lines)
 }
