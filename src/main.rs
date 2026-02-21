@@ -10,9 +10,14 @@ pub const PATH_2: &str = "./b.txt";
 //     iced::run(update, frame::view)
 // }
 
+// fn main() {
+//     println!("{:?}", logic::get_sorted_lines(PATH));
+//     // println!("{}", logic::merge_playlists(PATH_1, PATH_2));
+// }
+
 fn main() {
-    println!("{:?}", logic::get_sorted_lines(PATH));
-    // println!("{}", logic::merge_playlists(PATH_1, PATH_2));
+    println!("Running file explorer");
+    logic::read_external_disk_files();
 }
 
 // Función de actualización mínima

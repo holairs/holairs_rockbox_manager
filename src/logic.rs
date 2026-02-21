@@ -1,7 +1,11 @@
+use std::fs;
 use std::io::{self, BufRead, Write};
+use std::thread;
+use std::time::Duration;
 use std::{collections::HashSet, fs::File};
+use sysinfo::Disks;
 
-use crate::tools::file_actions::{self, open_files_by_path, read_file, write_file};
+use crate::tools::file_actions::{open_files_by_path, read_file, write_file};
 
 pub fn get_sorted_lines(path: &str) -> Result<String, String> {
     // Open and read file
@@ -73,4 +77,45 @@ pub fn remove_duplicated_lines(mut lines: Vec<String>) -> Result<Vec<String>, St
 
     lines.retain(|x| seen.insert(x.clone()));
     Ok(lines)
+}
+
+pub fn read_external_disk_files() {
+    loop {
+        // Refresh connected disk list
+        let disks = Disks::new_with_refreshed_list();
+
+        println!("Buscando pendrives...");
+
+        for disk in &disks {
+            // Get main path for each disk
+            let mount_point = disk.mount_point();
+
+            // Set the "ROCKBOX" path identifier
+            let dot_rockbox = mount_point.join(".rockbox");
+
+            if dot_rockbox.exists() && dot_rockbox.is_dir() {
+                println!("Disk found in: {:?}", mount_point);
+
+                // Directories to read: Playlist/
+                let playlist_dir_path = mount_point.join("Playlists");
+
+                if playlist_dir_path.exists() && playlist_dir_path.is_dir() {
+                    println!("Files in Directory {:?}:", playlist_dir_path);
+
+                    // Read files
+                    match fs::read_dir(&playlist_dir_path) {
+                        Ok(entries) => {
+                            for entry in entries.flatten() {
+                                println!(" - {}", entry.file_name().to_string_lossy());
+                            }
+                        }
+                        Err(e) => println!("Error while reading directory: {}", e),
+                    }
+                } else {
+                    println!(".rockbox found but theres no Playlists/ directory");
+                }
+            }
+        }
+        thread::sleep(Duration::from_secs(5));
+    }
 }
