@@ -1,49 +1,54 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const path_txt_1: String = "./test1.txt";
+  const path_txt_2: String = "./test2.txt";
+  const path_out: String = "./out_file_test.txt";
+  const name_test: String = "Ivan";
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  async function readFile(path: String) {
+    let res = await invoke("comm_read_file_lines", { path });
+    console.log(res);
+  }
+
+  async function mergeFiles(
+    path_1_test: String,
+    path_2_test: String,
+    path_out_0_test: String,
+  ) {
+    console.log("Ejecutando merge con:", {
+      path_1: path_1_test,
+      path_2: path_2_test,
+      path_out_0: path_out_0_test,
+    });
+    try {
+      // En App.tsx
+      let res = await invoke("comm_merge_playlists", {
+        path1: path_1_test, // Prueba sin el guion bajo
+        path2: path_2_test, // Prueba sin el guion bajo
+        outPath: path_out_0_test, // camelCase
+      });
+      console.log(res);
+    } catch (err) {
+      console.error("Error desde Rust:", err);
+    }
+  }
+
+  async function salute() {
+    console.log("Se ha ejecutado salute");
+    let res = await invoke("comm_salute", { name: name_test });
+    console.log(res);
   }
 
   return (
     <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
+      <h1>HOLA</h1>
+      <button onClick={() => readFile(path_txt_1)}>Buscar</button>
+      <button onClick={() => mergeFiles(path_txt_1, path_txt_2, path_out)}>
+        Merge
+      </button>
+      <button onClick={() => salute()}>Saludar</button>
     </main>
   );
 }
