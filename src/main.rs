@@ -47,6 +47,7 @@ fn main() {
                 
                 for pl in playlists {
                     println!(" -> {:?}", pl.file_name().unwrap_or_default());
+                    let opened_file = open_files_by_path(mount_point);
                 }
             }
         }

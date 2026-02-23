@@ -1,23 +1,28 @@
-use std::fs::File;
-use std::io::{self, BufRead};
+use std::fs::{self, File};
+use std::io::{self, BufRead, Write};
+use std::path::{Path, PathBuf};
 
-pub fn open_files_by_path(path: &str) -> Result<File, String> {
-    let file = File::open(path).map_err(|_| format!("ERROR: File not found in {}", path))?;
+/// Reads a file and returns its lines as a Vector of Strings
+pub fn read_playlist_lines<P: AsRef<Path>>(path: P) -> Result<Vec<String>, String> {
+    let file = File::open(&path)
+        .map_err(|e| format!("ERROR: Could not open {:?}: {}", path.as_ref(), e))?;
 
-    Ok(file)
-}
-
-pub fn read_file(file: File) -> Result<Vec<String>, String> {
-    let opened_file: Vec<String> = io::BufReader::new(file)
+    let lines: Vec<String> = io::BufReader::new(file)
         .lines()
         .map_while(Result::ok)
         .collect();
 
-    Ok(opened_file)
+    Ok(lines)
 }
 
-pub fn write_file(out_path: &str) -> Result<File, String> {
-    let write_file =
-        File::create(out_path).map_err(|_| format!("ERROR: Unable to write in {}", out_path))?;
-    Ok(write_file)
+/// Overwrites or creates a file with the provided lines
+pub fn save_playlist_changes<P: AsRef<Path>>(path: P, content: Vec<String>) -> Result<(), String> {
+    let mut file = File::create(&path)
+        .map_err(|e| format!("ERROR: Could not create file {:?}: {}", path.as_ref(), e))?;
+
+    for line in content {
+        writeln!(file, "{}", line).map_err(|e| format!("ERROR: Could not write to file: {}", e))?;
+    }
+
+    Ok(())
 }
