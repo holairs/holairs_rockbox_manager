@@ -3,7 +3,7 @@ use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 
 /// Reads a file and returns its lines as a Vector of Strings
-pub fn read_playlist_lines<P: AsRef<Path>>(path: P) -> Result<Vec<String>, String> {
+pub fn read_file_lines<P: AsRef<Path>>(path: P) -> Result<Vec<String>, String> {
     let file = File::open(&path)
         .map_err(|e| format!("ERROR: Could not open {:?}: {}", path.as_ref(), e))?;
 
@@ -16,7 +16,7 @@ pub fn read_playlist_lines<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Strin
 }
 
 /// Overwrites or creates a file with the provided lines
-pub fn save_playlist_changes<P: AsRef<Path>>(path: P, content: Vec<String>) -> Result<(), String> {
+pub fn write_file<P: AsRef<Path>>(path: P, content: Vec<String>) -> Result<(), String> {
     let mut file = File::create(&path)
         .map_err(|e| format!("ERROR: Could not create file {:?}: {}", path.as_ref(), e))?;
 
