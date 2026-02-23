@@ -1,48 +1,39 @@
 use std::fs;
-use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
-use std::thread;
-use std::time::Duration;
-use std::{collections::HashSet, fs::File};
+use sysinfo::Disks;
 
-use sysinfo::{DiskKind, Disks};
-
-pub fn read_external_disks() -> Result<Vec<String>, String> {
+// Scans the system for external disks, filtering out main system partitions
+pub fn read_external_disks() -> Result<Vec<PathBuf>, String> {
     let disks = Disks::new_with_refreshed_list();
-    let mut disks_list = Vec::new();
 
-    println!("Scanning disks....");
+    println!("Scanning disks...");
 
-    for disk in &disks {
-        let mount_point = disk.mount_point().to_string_lossy();
-
-        if mount_point == "/" || mount_point.starts_with("/System") {
-            continue;
-        }
-
-        disks_list.push(mount_point.into_owned());
-    }
+    let disks_list: Vec<PathBuf> = disks
+        .into_iter()
+        .map(|disk| disk.mount_point().to_path_buf())
+        .filter(|mount_point| {
+            // Cross-platform system directory filtering
+            let mp_str = mount_point.to_string_lossy();
+            !(mp_str == "/" || mp_str.starts_with("/System") || mp_str.starts_with("C:"))
+        })
+        .collect();
 
     if disks_list.is_empty() {
-        Err("External disks not found".to_string())
+        Err("No external disks found".to_string())
     } else {
         println!("Disks list: {:?}", disks_list);
         Ok(disks_list)
     }
 }
 
-// Usamos AsRef<Path> para que la función acepte tanto &str como PathBuf
-pub fn validate_rockbox_device<P: AsRef<Path>>(mount_point: P) -> Result<String, String> {
+// Validates if a given path contains a Rockbox installation
+pub fn validate_rockbox_device<P: AsRef<Path>>(mount_point: P) -> Result<PathBuf, String> {
     let mount_ref = mount_point.as_ref();
-
-    // Unimos la ruta del punto de montaje con la carpeta oculta .rockbox
     let dot_rockbox = mount_ref.join(".rockbox");
 
-    if dot_rockbox.exists() && dot_rockbox.is_dir() {
+    if dot_rockbox.is_dir() {
         println!("Rockbox folder found in: {:?}", mount_ref);
-
-        // Devolvemos la ruta del punto de montaje como String si es válido
-        Ok(mount_ref.to_string_lossy().into_owned())
+        Ok(mount_ref.to_path_buf())
     } else {
         Err(format!(
             "'{}' is not a Rockbox device (missing .rockbox)",
@@ -51,41 +42,43 @@ pub fn validate_rockbox_device<P: AsRef<Path>>(mount_point: P) -> Result<String,
     }
 }
 
+// Returns the path to the Playlists directory if it exists
 pub fn get_playlists_path<P: AsRef<Path>>(mount_point: P) -> Result<PathBuf, String> {
-    // Directories to read: Playlist/
-    let mount_ref = mount_point.as_ref();
-    let playlist_dir_path = mount_ref.join("Playlists");
-    if playlist_dir_path.exists() && playlist_dir_path.is_dir() {
-        println!("Playlist Directory found in{:?}:", playlist_dir_path);
-        Ok(playlist_dir_path)
+    let playlist_dir = mount_point.as_ref().join("Playlists");
+
+    if playlist_dir.is_dir() {
+        println!("Playlist Directory found at: {:?}", playlist_dir);
+        Ok(playlist_dir)
     } else {
-        Err("No Playlists/ Directory found".to_string())
+        Err("No Playlists/ directory found".to_string())
     }
 }
 
+// Lists all valid m3u/m3u8 playlists in a directory, ignoring system hidden files
 pub fn get_playlists_list<P: AsRef<Path>>(playlist_dir_path: P) -> Result<Vec<PathBuf>, String> {
     let path_ref = playlist_dir_path.as_ref();
-    let mut playlists = Vec::new();
 
     let entries = fs::read_dir(path_ref).map_err(|e| format!("Error reading directory: {}", e))?;
 
-    for entry in entries.flatten() {
-        let file_name = entry.file_name();
-        let name_str = file_name.to_string_lossy();
+    let playlists = entries
+        .flatten() // Skip results that are Errors
+        .filter_map(|entry| {
+            let path = entry.path();
+            let file_name = path.file_name()?.to_string_lossy();
 
-        // Filters to get only m3u8 files and no hidden files
-        if name_str.starts_with("._") {
-            continue;
-        }
+            // Ignore macOS metadata files and ensure valid extension
+            if file_name.starts_with("._") {
+                return None;
+            }
 
-        // Filters to get only m3u8
-        if name_str.ends_with(".m3u8") || name_str.ends_with(".m3u") {
-            // Each file path:
-            let file_path = path_ref.join(name_str.as_ref());
-            playlists.push(file_path);
-        }
-    }
+            let ext = path.extension()?.to_ascii_lowercase();
+            if ext == "m3u" || ext == "m3u8" {
+                Some(path)
+            } else {
+                None
+            }
+        })
+        .collect();
 
-    // Return list
     Ok(playlists)
 }

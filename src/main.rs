@@ -43,7 +43,7 @@ fn main() {
                 // 4. Listar los archivos m3u/m3u8
                 let playlists = get_playlists_list(&pg_path)?;
 
-                println!("Foun {} playlist(s) in {}", playlists.len(), mount_point);
+                println!("Found {} playlist(s) in {:?}", playlists.len(), mount_point);
                 
                 for pl in playlists {
                     println!(" -> {:?}", pl.file_name().unwrap_or_default());
