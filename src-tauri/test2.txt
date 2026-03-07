@@ -1,3 +1,2 @@
 Hola desde el file txt_2
 Esto es una prueba_2
-:(

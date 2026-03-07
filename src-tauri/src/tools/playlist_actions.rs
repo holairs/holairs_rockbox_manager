@@ -1,14 +1,21 @@
 use crate::tools::file_actions::{read_file_lines, write_file};
 use std::path::Path;
 
+pub fn validate_songs_path<P: AsRef<Path>>(playlist_path: P) {
+    println!("Validating songs path...");
+    let path = playlist_path.as_ref().to_str();
+    
+    println!("{:?}", path);
+
+}
+
 // Merges two playlists into a single file
 pub fn merge_playlists<P: AsRef<Path>>(
     path_1: P,
     path_2: P,
     out_path: P,
 ) -> Result<Vec<String>, String> {
-    let mut lines_1 = read_file_lines(&path_1).map_err(|e| e.to_string())?;
-    let mut lines_2 = read_file_lines(&path_2).map_err(|e| e.to_string())?;
+    let mut lines_1 = read_file_lines(&path_1).map_err(|e| e.to_string())?; let mut lines_2 = read_file_lines(&path_2).map_err(|e| e.to_string())?;
 
     lines_1.append(&mut lines_2);
 

@@ -1,6 +1,4 @@
 Hola desde el file txt_1
 Esto es una prueba_1
-:D
 Hola desde el file txt_2
 Esto es una prueba_2
-:(
